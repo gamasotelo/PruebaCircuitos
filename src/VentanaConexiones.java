@@ -5,76 +5,92 @@ import javax.swing.table.DefaultTableModel;
 
 public class VentanaConexiones extends javax.swing.JDialog {
 
-    DefaultTableModel modelo;
-    int numero_nodos;
-    Object[][] datos_tabla;
-    String[][] datos_conexiones;
+    DefaultTableModel modeloTabla;
+    int numeroDeNodos;
+    Object[][] datosTabla;
+    String[][] datosConexiones;
+     String[][] datosConexionesSinRedundancias;
+    int columnaNodo = 0, columnaConexiones = 1;
     
     public VentanaConexiones(int numero_nodos, Object[][] datos_tabla) {
         initComponents();
         setLocationRelativeTo(null);
-         this.numero_nodos = numero_nodos;
-         this.datos_tabla = datos_tabla; 
+         this.numeroDeNodos = numero_nodos;
+         this.datosTabla = datos_tabla; 
          this.setVisible(true);
-         modelo = (DefaultTableModel)tabla1.getModel();
-         inicia_tabla();
+         modeloTabla = (DefaultTableModel)tabla.getModel();
+         iniciarTabla();
     }
     
-    private void inicia_tabla(){
+    private void iniciarTabla(){
         String[] renglon = new String[2];
         
-        for (int i = 1; i <= numero_nodos; i++) {
-            if(i % 2 != 0){
+        for (int i = 1; i <= numeroDeNodos; i++) {
                 renglon[0] = String.valueOf(i);
                 renglon[1] = "";
                 
-                modelo.addRow(renglon);
-            }
+                modeloTabla.addRow(renglon);            
         }
     }
     
-    private void leer_tabla(){
-        String[] conexiones;
-        String casilla_nodo;
-        datos_conexiones = new String[numero_nodos][numero_nodos];
-        
-        for (int i = 0; i < tabla1.getRowCount(); i++) {
-            String info_celda_conexiones = String.valueOf(tabla1.getValueAt(i, 1));
-            casilla_nodo = String.valueOf(tabla1.getValueAt(i,0));
-            
-            conexiones = info_celda_conexiones.split(",");
-            
-            // Eliminar espacios del arreglo
-            for(int j = 0; j < conexiones.length ; j++) {
-            conexiones[j] = conexiones[j].trim();
-            }
-            
-            boolean error = comprueba_errores(conexiones);
-            if (error)
-                break;
-            
-            datos_conexiones[i][0] = casilla_nodo;
-            for(int j = 1; j <= conexiones.length ; j++) {
-                datos_conexiones[i][j] = conexiones[j-1];
+    private void eliminacionDeRejdundanciasEnLasConexiones() {
+        datosConexionesSinRedundancias = datosConexiones;
+
+        for (int renglonNodo = 0; renglonNodo < datosConexiones.length; renglonNodo++) {
+            String nodo = datosConexiones[renglonNodo][columnaNodo];
+            for (int renglon = renglonNodo; renglon < datosConexiones.length; renglon++) {
+                for (int columna = 1; columna < datosConexiones[renglon].length; columna++) {
+                    String conexion = datosConexiones[renglon][columna];
+                    if (nodo.equals(conexion)) {
+                        datosConexionesSinRedundancias[renglon][columna] = null;
+                    }
+                    System.out.println(nodo + " no es igual a " + conexion);
+                }
             }
         }
+
+    }
+
+    
+    private void leerTabla(){
+        String[] listaConexionesPorNodo;
+        String celdaNodo;
+        datosConexiones = new String[numeroDeNodos][numeroDeNodos];
         
-        Matrices objeto = new Matrices(numero_nodos);
-        objeto.obtenerTodasLasConexiones(datos_conexiones);
+        for (int numeroDeRenglon = 0; numeroDeRenglon < tabla.getRowCount(); numeroDeRenglon++) {
+            String celdaConexiones = String.valueOf(tabla.getValueAt(numeroDeRenglon, columnaConexiones));
+            celdaNodo= String.valueOf(tabla.getValueAt(numeroDeRenglon,columnaNodo));
+            
+            listaConexionesPorNodo = celdaConexiones.split(",");
+            
+            // Eliminar espacios en blanco del arreglo
+            for(int j = 0; j < listaConexionesPorNodo.length ; j++) {
+                listaConexionesPorNodo[j] = listaConexionesPorNodo[j].trim();
+            }
+            
+            boolean hayUnError = comprueba_errores(listaConexionesPorNodo);
+            if (hayUnError)
+                break;
+            
+            datosConexiones[numeroDeRenglon][columnaNodo] = celdaNodo;
+            for(int numeroColumna = 1; numeroColumna <= listaConexionesPorNodo.length ; numeroColumna++) {
+                datosConexiones[numeroDeRenglon][numeroColumna] = listaConexionesPorNodo[numeroColumna-1];
+            }
+        }
     }
     
     
     
     
     private boolean comprueba_errores(String[] conexiones){
-        int longitud = conexiones.length;
+        int longitudDelArreglo = conexiones.length;
         boolean error = false;
         
-        for (int j = 0; j < longitud; j++) {
+        for (int j = 0; j < longitudDelArreglo; j++) {
             try {
                 int dato = Integer.parseInt(conexiones[j]);
                 
-                if(dato <1 || dato > numero_nodos){
+                if(dato <1 || dato > numeroDeNodos){
                     JOptionPane.showMessageDialog(null, "Número fuera de rango: " + conexiones[j]);
                     error = true;
                     return error;
@@ -86,7 +102,7 @@ public class VentanaConexiones extends javax.swing.JDialog {
                 return error;
             }
             
-            for (int i = 0; i < numero_nodos; i++) {
+            for (int i = 0; i < numeroDeNodos; i++) {
                 
             }
         }
@@ -97,6 +113,16 @@ public class VentanaConexiones extends javax.swing.JDialog {
          
     }
     
+    public void imprimirDatosParaHacerPruebas(String[][]datos){
+        for (int i = 0; i < datos.length; i++) {
+            System.out.println("");
+            for (int j = 0; j < datos[i].length; j++) {
+                if(datos[i][j] != null)
+                System.out.print(datos[i][j] + ", ");
+            }
+        }
+    }
+    
 
 
     @SuppressWarnings("unchecked")
@@ -104,25 +130,41 @@ public class VentanaConexiones extends javax.swing.JDialog {
     private void initComponents() {
 
         jScrollPane1 = new javax.swing.JScrollPane();
-        tabla1 = new javax.swing.JTable();
+        tabla = new javax.swing.JTable();
         jButton1 = new javax.swing.JButton();
+        bEliminarRedundanciasDeLaTabla = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
-        tabla1.setModel(new javax.swing.table.DefaultTableModel(
+        tabla.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
             new String [] {
                 "Nodo", "Conexion "
             }
-        ));
-        jScrollPane1.setViewportView(tabla1);
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, true
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        jScrollPane1.setViewportView(tabla);
 
         jButton1.setText("jButton1");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
+            }
+        });
+
+        bEliminarRedundanciasDeLaTabla.setText("Eliminar Redundancias De La Tabla");
+        bEliminarRedundanciasDeLaTabla.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                bEliminarRedundanciasDeLaTablaActionPerformed(evt);
             }
         });
 
@@ -136,6 +178,8 @@ public class VentanaConexiones extends javax.swing.JDialog {
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(bEliminarRedundanciasDeLaTabla)
+                .addGap(157, 157, 157)
                 .addComponent(jButton1)
                 .addGap(24, 24, 24))
         );
@@ -145,7 +189,9 @@ public class VentanaConexiones extends javax.swing.JDialog {
                 .addGap(27, 27, 27)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 389, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jButton1)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton1)
+                    .addComponent(bEliminarRedundanciasDeLaTabla))
                 .addContainerGap(24, Short.MAX_VALUE))
         );
 
@@ -153,16 +199,23 @@ public class VentanaConexiones extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        leer_tabla();
+        leerTabla();
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void bEliminarRedundanciasDeLaTablaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bEliminarRedundanciasDeLaTablaActionPerformed
+        leerTabla();
+        eliminacionDeRejdundanciasEnLasConexiones();
+        imprimirDatosParaHacerPruebas(datosConexionesSinRedundancias);
+    }//GEN-LAST:event_bEliminarRedundanciasDeLaTablaActionPerformed
 
     public static void main(String args[]) {
      
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton bEliminarRedundanciasDeLaTabla;
     private javax.swing.JButton jButton1;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable tabla1;
+    private javax.swing.JTable tabla;
     // End of variables declaration//GEN-END:variables
 }
